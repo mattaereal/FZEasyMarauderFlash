@@ -144,7 +144,7 @@ def choose_fw():
 	global selectedboard
 	global fwchoice
 	global fwchoicepreselect
-	hardresetlist=[FW_MARAUDER_MINI, FW_MARAUDER_V6_WROOM, FW_AWOK_V1_3_DUOBOARD, 
+	hardresetlist=[FW_MARAUDER_FLIPPER_S2, FW_MARAUDER_MINI, FW_MARAUDER_V6_WROOM, FW_AWOK_V1_3_DUOBOARD, 
 		       FW_AWOK_V4_CHUNGUS, FW_AWOK_V5, FW_AWOK_DUAL_ORANGE, 
 		       FW_AWOK_DUAL_TOUCH_WHITE, FW_AWOK_DUAL_MINI_WHITE]
 
@@ -175,9 +175,8 @@ def choose_fw():
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
 		checkforserialport(FW_MARAUDER_FLIPPER_S2)
-		eraseparams=['-p', serialport, '-b', BR, '-a', 'no-reset', 'erase-flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
-		flashtheboard(eraseparams, flashparams)
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '-z', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		flashtheboard(None, flashparams)
 	elif fwchoice==FW_SAVE_BLACKMAGIC:
 		print("You have chosen to save Flipper Blackmagic WiFi settings")
 		chip="esp32s2"
@@ -557,7 +556,8 @@ def prereqcheck():
 	return
 
 def flashtheboard(eraseparams, flashparams):
-	erase_esp32(eraseparams)
+	if eraseparams is not None:
+		erase_esp32(eraseparams)
 	tries=3
 	attempts=0
 	for i in range(tries):
