@@ -21,6 +21,26 @@ args=parser.parse_args()
 serialport=args.serialport
 fwchoice=args.preselect
 
+# Firmware option constants for better readability
+FW_MARAUDER_FLIPPER_S2 = 1
+FW_SAVE_BLACKMAGIC = 2
+FW_FLASH_BLACKMAGIC = 3
+FW_MARAUDER_WROOM = 4
+FW_MARAUDER_MINI = 5
+FW_MARAUDER_V6_WROOM = 6
+FW_MARAUDER_S3 = 7
+FW_AWOK_V1_3_DUOBOARD = 8
+FW_AWOK_V4_CHUNGUS = 9
+FW_AWOK_V5 = 10
+FW_AWOK_DUAL_ORANGE = 11
+FW_AWOK_DUAL_TOUCH_WHITE = 12
+FW_AWOK_DUAL_MINI_WHITE = 13
+FW_EVIL_PORTAL_WROOM = 14
+FW_EVIL_PORTAL_S2 = 15
+FW_ERASE_ONLY = 16
+FW_UPDATE_FILES = 17
+FW_EXIT = 18
+
 OPENASCII=Fore.GREEN+r'''
 #################################################################################
 #                          ESP32 FZEasyFlasher					#
@@ -42,7 +62,7 @@ print(OPENASCII)
 print("Make sure your ESP32 or WiFi devboard is plugged in!")
 BR=str("115200")
 
-def checkforserialport():
+def checkforserialport(fw_option=None):
 	global serialport
 	if serialport!='':
 		print("Will not check for serial port or possible chip type since it is specified as", serialport)
@@ -52,6 +72,7 @@ def checkforserialport():
 	print("Checking for serial port...")
 	vids=['303A','10C4','1A86', '0483']
 	com_port=None
+	device=''
 	ports=list(serial.tools.list_ports.comports())
 	for vid in vids:
 		for port in ports:
@@ -61,6 +82,9 @@ def checkforserialport():
 	if serialport=='':
 		print(Fore.RED+"No ESP32 device was detected!"+Style.RESET_ALL)
 		print(Fore.RED+"Please plug in a Flipper WiFi devboard or an ESP32 chip and try again"+Style.RESET_ALL)
+		# Show boot mode instructions for ESP32-S2 based devices
+		if fw_option in [FW_MARAUDER_FLIPPER_S2, FW_AWOK_V4_CHUNGUS, FW_AWOK_V5, FW_AWOK_DUAL_ORANGE, FW_EVIL_PORTAL_S2]:
+			print(Fore.YELLOW+"Try holding BOOT, clicking RESET, releasing RESET, then releasing BOOT to enter flashing mode"+Style.RESET_ALL)
 		if fwchoicepreselect==False:
 			choose_fw()
 		elif fwchoicepreselect==True:
@@ -120,7 +144,9 @@ def choose_fw():
 	global selectedboard
 	global fwchoice
 	global fwchoicepreselect
-	hardresetlist=[5, 6, 8, 9, 10, 11, 12, 13]
+	hardresetlist=[FW_MARAUDER_MINI, FW_MARAUDER_V6_WROOM, FW_AWOK_V1_3_DUOBOARD, 
+		       FW_AWOK_V4_CHUNGUS, FW_AWOK_V5, FW_AWOK_DUAL_ORANGE, 
+		       FW_AWOK_DUAL_TOUCH_WHITE, FW_AWOK_DUAL_MINI_WHITE]
 
 	if fwchoice!=None:
 		fwchoicepreselect=True
@@ -133,10 +159,10 @@ def choose_fw():
 		print(choices)
 		fwchoice=int(input("Please enter the number of your choice: "))
 	if fwchoice in hardresetlist:
-		reset='hard_reset'
+		reset='hard-reset'
 	else:
-		reset='no_reset'
-	if fwchoice==1:
+		reset='no-reset'
+	if fwchoice==FW_MARAUDER_FLIPPER_S2:
 		print("You have chosen to flash Marauder on a WiFi devboard or ESP32-S2")
 		chip="esp32s2"
 		selectedfw="Marauder"
@@ -148,18 +174,18 @@ def choose_fw():
 		partitions_bin=extraesp32bins+'/Marauder/partitions.bin'
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, '-a', 'no_reset', 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_MARAUDER_FLIPPER_S2)
+		eraseparams=['-p', serialport, '-b', BR, '-a', 'no-reset', 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==2:
+	elif fwchoice==FW_SAVE_BLACKMAGIC:
 		print("You have chosen to save Flipper Blackmagic WiFi settings")
 		chip="esp32s2"
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		savebmset=['-p', serialport, '-b', BR, '-c', chip, '-a', 'no_reset', 'read_flash', '0x9000', '0x6000', extraesp32bins+'/Blackmagic/nvs.bin']
+		checkforserialport(FW_SAVE_BLACKMAGIC)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		savebmset=['-p', serialport, '-b', BR, '-c', chip, '-a', 'no-reset', 'read-flash', '0x9000', '0x6000', extraesp32bins+'/Blackmagic/nvs.bin']
 		save_flipperbmsettings(savebmset)
-	elif fwchoice==3:
+	elif fwchoice==FW_FLASH_BLACKMAGIC:
 		print("You have chosen to flash Flipper Blackmagic")
 		chip="esp32s2"
 		selectedfw="Blackmagic"
@@ -170,18 +196,18 @@ def choose_fw():
 		offset_two='0x8000'
 		partitions_bin=extraesp32bins+'/Blackmagic/partition-table.bin'
 		fwbin=extraesp32bins+'/Blackmagic/blackmagic.bin'
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
+		checkforserialport(FW_FLASH_BLACKMAGIC)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
 		if os.path.exists(extraesp32bins+"/Blackmagic/nvs.bin"):
 			offset_three='0x9000'
 			wifisettings=extraesp32bins+'/Blackmagic/nvs.bin'
 			offset_four='0x10000'
-			flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', 'no_reset', 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, wifisettings, offset_four, fwbin]
+			flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', 'no-reset', 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, wifisettings, offset_four, fwbin]
 		else:
 			offset_three='0x10000'
-			flashparams=esptool.main['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', 'no_reset', 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+			flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', 'no-reset', 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==4:
+	elif fwchoice==FW_MARAUDER_WROOM:
 		print("You have chosen to flash Marauder onto an ESP32-WROOM")
 		chip="esp32"
 		selectedfw="Marauder"
@@ -193,11 +219,11 @@ def choose_fw():
 		partitions_bin=scorpbins+'/partitions.bin'
 		offset_three='0x10000'
 		fwbin=espoldhardwarefw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]		
+		checkforserialport(FW_MARAUDER_WROOM)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]		
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==5:
+	elif fwchoice==FW_MARAUDER_MINI:
 		print("You have chosen to flash Marauder onto an ESP32 Marauder Mini")
 		chip="esp32"
 		selectedfw="Marauder"
@@ -209,11 +235,11 @@ def choose_fw():
 		partitions_bin=scorpbins+'/partitions.bin'
 		offset_three='0x10000'
 		fwbin=esp32minifw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_MARAUDER_MINI)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==6:
+	elif fwchoice==FW_MARAUDER_V6_WROOM:
 		print("You have chosen to flash Marauder v6 onto an ESP32-WROOM")
 		chip="esp32"
 		selectedfw="Marauder v6"
@@ -225,15 +251,16 @@ def choose_fw():
 		partitions_bin=scorpbins+'/partitions.bin'
 		offset_three='0x10000'
 		fwbin=espnewhardwarefw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_MARAUDER_V6_WROOM)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==7:
+	elif fwchoice==FW_MARAUDER_S3:
 		print("You have chosen to flash Marauder onto an ESP32-S3")
 		try:
-			os.path.exists(esp32s3fw)  # Since 1.0.0 update didn't include the S3 bin
-		except:
+			if not os.path.exists(esp32s3fw):
+				raise FileNotFoundError
+		except (NameError, FileNotFoundError):
 			print("You don't have the S3 firmware downloaded. It's likely missing from the latest release.")
 			print("If you put a previous multiboard bin in the ESP32Marauder/releases/ folder, it should be able to flash that.")
 			exit()
@@ -249,11 +276,11 @@ def choose_fw():
 		boot_app=extraesp32bins+'/S3/boot_app0.bin'
 		offset_four='0x10000'
 		fwbin=esp32s3fw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', 'no_reset', 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, boot_app, offset_four, fwbin]
+		checkforserialport(FW_MARAUDER_S3)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', 'no-reset', 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, boot_app, offset_four, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==8:
+	elif fwchoice==FW_AWOK_V1_3_DUOBOARD:
 		print("You have chosen to flash Marauder onto an AWOK v1-3 or Duoboard")
 		chip="esp32"
 		selectedfw="Marauder"
@@ -265,11 +292,11 @@ def choose_fw():
 		partitions_bin=scorpbins+'/partitions.bin'
 		offset_three='0x10000'
 		fwbin=espoldhardwarefw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_AWOK_V1_3_DUOBOARD)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==9:
+	elif fwchoice==FW_AWOK_V4_CHUNGUS:
 		print("You have chosen to flash Marauder on an AWOK v4 Chungus Board")
 		chip="esp32s2"
 		selectedfw="Marauder"
@@ -281,11 +308,11 @@ def choose_fw():
 		partitions_bin=extraesp32bins+'/Marauder/partitions.bin'
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_AWOK_V4_CHUNGUS)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==10:
+	elif fwchoice==FW_AWOK_V5:
 		print("You have chosen to flash Marauder on an AWOK v5 ESP32")
 		chip="esp32s2"
 		selectedfw="Marauder"
@@ -297,11 +324,11 @@ def choose_fw():
 		partitions_bin=extraesp32bins+'/Marauder/partitions.bin'
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_AWOK_V5)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==11:
+	elif fwchoice==FW_AWOK_DUAL_ORANGE:
 		print("You have chosen to flash Marauder on an AWOK Dual ESP32 (Orange Port)")
 		chip="esp32s2"
 		selectedfw="Marauder"
@@ -313,11 +340,11 @@ def choose_fw():
 		partitions_bin=extraesp32bins+'/Marauder/partitions.bin'
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_AWOK_DUAL_ORANGE)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==12: 
+	elif fwchoice==FW_AWOK_DUAL_TOUCH_WHITE: 
 		print("You have chosen to flash Marauder onto an AWOK Dual ESP32 Touch Screen (White Port)")
 		chip="esp32"
 		selectedfw="Marauder"
@@ -329,11 +356,11 @@ def choose_fw():
 		partitions_bin=scorpbins+'/partitions.bin'
 		offset_three='0x10000'
 		fwbin=espnewhardwarefw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_AWOK_DUAL_TOUCH_WHITE)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==13:
+	elif fwchoice==FW_AWOK_DUAL_MINI_WHITE:
 		print("You have chosen to flash Marauder onto an AWOK Dual ESP32 Mini (White Port)")
 		chip="esp32"
 		selectedfw="Marauder Mini"
@@ -345,11 +372,11 @@ def choose_fw():
 		partitions_bin=scorpbins+'/partitions.bin'
 		offset_three='0x10000'
 		fwbin=esp32minifw
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', reset, 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
+		checkforserialport(FW_AWOK_DUAL_MINI_WHITE)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==14:
+	elif fwchoice==FW_EVIL_PORTAL_WROOM:
 		print("You have chosen to flash Evil Portal on an ESP32-WROOM")
 		chip="esp32"
 		selectedfw="Evil Portal"
@@ -357,11 +384,11 @@ def choose_fw():
 		flashsize='4MB'
 		offset_one='0x1000'
 		fwbin=evilportalfwwroom
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', 'hard_reset', 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, fwbin]
+		checkforserialport(FW_EVIL_PORTAL_WROOM)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', 'hard-reset', 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==15:
+	elif fwchoice==FW_EVIL_PORTAL_S2:
 		print("You have chosen to flash Evil Portal on an ESP32-S2 or WiFi Devboard")
 		chip="esp32s2"
 		selectedfw="Evil Portal"
@@ -369,21 +396,21 @@ def choose_fw():
 		flashsize='4MB'
 		offset_one='0x1000'
 		fwbin=evilportalfws2
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR,  '-a', 'no_reset', 'erase_flash']
-		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default_reset', '-a', 'hard_reset', 'write_flash', '--flash_mode', 'dio', '--flash_freq', '80m', '--flash_size', flashsize, offset_one, fwbin]
+		checkforserialport(FW_EVIL_PORTAL_S2)
+		eraseparams=['-p', serialport, '-b', BR,  '-a', 'no-reset', 'erase-flash']
+		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', 'hard-reset', 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, fwbin]
 		flashtheboard(eraseparams, flashparams)
-	elif fwchoice==16:
+	elif fwchoice==FW_ERASE_ONLY:
 		print("You have chosen to just erase the ESP32")
-		checkforserialport()
-		eraseparams=['-p', serialport, '-b', BR, 'erase_flash']
+		checkforserialport(FW_ERASE_ONLY)
+		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
 		erase_esp32(eraseparams)
-	elif fwchoice==17:
+	elif fwchoice==FW_UPDATE_FILES:
 		print("You have chosen to update all of the files")
 		fwchoicepreselect=False
 		fwchoice=None
 		update_option()
-	elif fwchoice==18:
+	elif fwchoice==FW_EXIT:
 		print("You have chosen to exit")
 		print("Exiting!")
 		exit()
@@ -426,8 +453,11 @@ def checkforesp32marauder():
 		jsondata=response.json()
 		for assetdl in jsondata['assets']:
 			marauderasset=assetdl['browser_download_url']
-			if marauderasset.find('/'):
-				filename=(marauderasset.rsplit('/', 1)[1])
+			if '/' not in marauderasset:
+				print(Fore.RED+f"Error: Invalid asset URL format from GitHub: {marauderasset}"+Style.RESET_ALL)
+				print(Fore.RED+"This might indicate a problem with the GitHub API response."+Style.RESET_ALL)
+				exit()
+			filename=marauderasset.rsplit('/', 1)[1]
 			downloadfile=requests.get(marauderasset, allow_redirects=True)
 			open('ESP32Marauder/releases/'+filename, 'wb').write(downloadfile.content)
 	esp32marauderfwc=('ESP32Marauder/releases/esp32_marauder_v*_flipper.bin')
