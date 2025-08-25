@@ -12,17 +12,28 @@ You have one prerequisite.
 You need to install `git` however you would on your system if you haven't already.  
 
 ## It is now simple to install or update Marauder or Evil Portal on Linux, Mac OS X, or Windows.
-# How to use: 
-* Ideally use a venv as it's best practice with any Python scripts, although it isn't required (Google it if you don't know what that is)
-* Step 0 only has to be ran once. (That doesn't mean it's okay to skip it unless you're running it again after having just used it)
-* Steps 1-4 are not necessary on AWOK boards
-0) run `pip3 install -r requirements.txt`. 
+
+# How to use:
+
+## Hardware Setup (for non-AWOK boards):
 1) Press and hold the `BOOT` button on the module
 2) While still holding `BOOT`, connect the devboard or ESP32 board via USB.
 3) Press and release the `RESET` button.
 4) Release the `BOOT` button. 
-5) run `python3 EasyInstall.py`. 
-6) Select the option of what you want to do
+
+## Software Setup:
+
+**Recommended:** Use [uv](https://docs.astral.sh/uv/) - it's faster, handles dependencies automatically, and manages virtual environments for you:
+```bash
+uv run python EasyInstall.py
+```
+
+**If you prefer pip:** Manual setup with traditional tools:
+* Ideally use a venv as it's best practice with any Python scripts, although it isn't required (Google it if you don't know what that is)
+* Step 0 only has to be ran once. (That doesn't mean it's okay to skip it unless you're running it again after having just used it)
+0) run `pip3 install -r requirements.txt`. 
+1) run `python3 EasyInstall.py`. 
+2) Select the option of what you want to do
 
 ## This project was based on the Windows Marauder flasher batch script
 
@@ -76,6 +87,17 @@ Here are some steps to try:
 * If you're using Windows, don't use Git Bash, it doesn't work well with this script. Instead, use Powershell, Windows Terminal, or CMD
 * On Windows and Python is acting strange? Uninstall it then re-install it via the Microsoft Store.
 * Make sure you're running the latest Python release! If you're on 3.8 when current is 3.11.3 for example, don't bother opening an issue until after you upgrade and try again. Don't try to use old stuff.
+
+## Manual Flashing Fallback
+If the script fails or doesn't work properly, you can flash manually using esptool directly. 
+
+For ESP32-S2/WiFi Devboard (Option 1), use:
+```bash
+uvx esptool --chip esp32s2 --port /dev/ttyACM0 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x1000 Extra_ESP32_Bins/Marauder/bootloader.bin 0x8000 Extra_ESP32_Bins/Marauder/partitions.bin 0x10000 ESP32Marauder/releases/esp32_marauder_v*_flipper.bin
+```
+
+Replace `/dev/ttyACM0` with your actual serial port and adjust the firmware path as needed. The script now shows boot mode instructions automatically for ESP32-S2 devices when they're not detected.
+
 * Still can't get it and don't understand CLI at all and can't even figure out how to cd? What are you even doing? This definitely isn't for you. Try using the ESP Flasher app on your Flipper Zero.  
 
 ## Why do I kind of pick on Windows users?
