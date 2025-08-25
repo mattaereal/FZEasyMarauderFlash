@@ -91,7 +91,7 @@ Here are some steps to try:
 ## Manual Flashing Fallback
 If the script fails or doesn't work properly, you can flash manually using esptool directly. 
 
-For ESP32-S2/WiFi Devboard (Option 1), use:
+Here's an example using `uvx` for ESP32-S2/WiFi Devboard (Option 1):
 ```bash
 uvx esptool --chip esp32s2 --port /dev/ttyACM0 --baud 115200 --before default-reset --after hard-reset write-flash -z --flash-mode dio --flash-freq 80m --flash-size 4MB 0x1000 Extra_ESP32_Bins/Marauder/bootloader.bin 0x8000 Extra_ESP32_Bins/Marauder/partitions.bin 0x10000 ESP32Marauder/releases/esp32_marauder_v*_flipper.bin
 ```
