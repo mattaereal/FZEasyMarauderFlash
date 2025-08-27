@@ -175,8 +175,9 @@ def choose_fw():
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
 		checkforserialport(FW_MARAUDER_FLIPPER_S2)
+		eraseparams=['-p', serialport, '-b', BR, '-a', 'no-reset', 'erase-flash']
 		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '-z', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
-		flashtheboard(None, flashparams)
+		flashtheboard(eraseparams, flashparams)
 	elif fwchoice==FW_SAVE_BLACKMAGIC:
 		print("You have chosen to save Flipper Blackmagic WiFi settings")
 		chip="esp32s2"
@@ -196,7 +197,7 @@ def choose_fw():
 		partitions_bin=extraesp32bins+'/Blackmagic/partition-table.bin'
 		fwbin=extraesp32bins+'/Blackmagic/blackmagic.bin'
 		checkforserialport(FW_FLASH_BLACKMAGIC)
-		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		eraseparams=['-p', serialport, '-b', BR, '-a', 'no-reset', 'erase-flash']
 		if os.path.exists(extraesp32bins+"/Blackmagic/nvs.bin"):
 			offset_three='0x9000'
 			wifisettings=extraesp32bins+'/Blackmagic/nvs.bin'
@@ -308,7 +309,7 @@ def choose_fw():
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
 		checkforserialport(FW_AWOK_V4_CHUNGUS)
-		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		eraseparams=['-p', serialport, '-b', BR, '-a', 'no-reset', 'erase-flash']
 		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
 	elif fwchoice==FW_AWOK_V5:
@@ -324,7 +325,7 @@ def choose_fw():
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
 		checkforserialport(FW_AWOK_V5)
-		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		eraseparams=['-p', serialport, '-b', BR, '-a', 'no-reset', 'erase-flash']
 		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
 	elif fwchoice==FW_AWOK_DUAL_ORANGE:
@@ -340,7 +341,7 @@ def choose_fw():
 		offset_three='0x10000'
 		fwbin=esp32marauderfw
 		checkforserialport(FW_AWOK_DUAL_ORANGE)
-		eraseparams=['-p', serialport, '-b', BR, 'erase-flash']
+		eraseparams=['-p', serialport, '-b', BR, '-a', 'no-reset', 'erase-flash']
 		flashparams=['-p', serialport, '-b', BR, '-c', chip, '--before', 'default-reset', '-a', reset, 'write-flash', '--flash-mode', 'dio', '--flash-freq', '80m', '--flash-size', flashsize, offset_one, bootloader_bin, offset_two, partitions_bin, offset_three, fwbin]
 		flashtheboard(eraseparams, flashparams)
 	elif fwchoice==FW_AWOK_DUAL_TOUCH_WHITE: 
@@ -426,6 +427,16 @@ def erase_esp32(eraseparams):
 			attempts+=1
 			print("Erasing firmware...")
 			esptool.main(eraseparams)
+		except SystemExit as e:
+			if e.code != 0:
+				print(f"Esptool error: {e}")
+				if attempts==3:
+					print("Unable to erase the firmware")
+					exit()
+				print("Waiting 5 seconds and trying again...")
+				time.sleep(5)
+				continue
+			# Exit code 0 means success, continue normally
 		except Exception as err:
 			print(err)
 			if attempts==3:
@@ -565,6 +576,16 @@ def flashtheboard(eraseparams, flashparams):
 			attempts+=1
 			print("Flashing", selectedfw, "on", selectedboard)
 			esptool.main(flashparams)
+		except SystemExit as e:
+			if e.code != 0:
+				print(f"Esptool error: {e}")
+				if attempts==3:
+					print("Could not flash", selectedfw, "on", selectedboard)
+					exit()
+				print("Waiting 5 seconds and trying again...")
+				time.sleep(5)
+				continue
+			# Exit code 0 means success, continue normally
 		except Exception as err:
 			print(err)
 			if attempts==3:
@@ -585,6 +606,16 @@ def save_flipperbmsettings(savebmset):
 			attempts +=1
 			print("Saving Flipper Blackmagic WiFi Settings to Extra_ESP32_Bins/Blackmagic/nvs.bin")
 			esptool.main(savebmset)
+		except SystemExit as e:
+			if e.code != 0:
+				print(f"Esptool error: {e}")
+				if attempts==3:
+					print("Could not save Flipper Blackmagic WiFi Settings")
+					exit()
+				print("Waiting 5 seconds and trying again...")
+				time.sleep(5)
+				continue
+			# Exit code 0 means success, continue normally
 		except Exception as err:
 			print(err)
 			if attempts==3:
